@@ -81,3 +81,5 @@ public class AdjPriv
 $processHandle = (Get-Process -id $ProcessId).Handle
 $type = Add-Type $definition -PassThru
 $type[0]::EnablePrivilege($processHandle, $Privilege, $Disable)
+
+echo "DONE"
