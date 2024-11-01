@@ -1,7 +1,7 @@
 import os
 import sys
 import ctypes
-
+print("START")
 def enable_privilege(privilege_name):
     """Enable the specified privilege."""
     h_token = ctypes.c_void_p()
