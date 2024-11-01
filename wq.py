@@ -11,7 +11,7 @@ OpenProcessToken.argtypes = (wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(win
 OpenProcessToken.restype = wintypes.BOOL
 
 LookupPrivilegeValueA = advapi32.LookupPrivilegeValueA
-LookupPrivilegeValueA.argtypes = (wintypes.LPCSTR, wintypes.LPCSTR, ctypes.POINTER(wintypes.LPLUID))
+LookupPrivilegeValueA.argtypes = (wintypes.LPCSTR, wintypes.LPCSTR, ctypes.POINTER(wintypes.LUID))
 LookupPrivilegeValueA.restype = wintypes.BOOL
 
 AdjustTokenPrivileges = advapi32.AdjustTokenPrivileges
@@ -28,16 +28,28 @@ OpenProcessToken(process_handle, 0x0008, ctypes.byref(token_handle))
 
 # Get the LUID for the privilege
 luid = wintypes.LUID()
-LookupPrivilegeValueA(None, priv_name, ctypes.byref(luid))
+LookupPrivilegeValueA(None, priv_name.encode('utf-8'), ctypes.byref(luid))
 
 # Create a TOKEN_PRIVILEGES structure
-token_privileges = wintypes.TOKEN_PRIVILEGES()
+class TOKEN_PRIVILEGES(ctypes.Structure):
+    _fields_ = [
+        ("PrivilegeCount", wintypes.DWORD),
+        ("Privileges", wintypes.LUID_AND_ATTRIBUTES * 1)
+    ]
+
+class LUID_AND_ATTRIBUTES(ctypes.Structure):
+    _fields_ = [
+        ("Luid", wintypes.LUID),
+        ("Attributes", wintypes.DWORD)
+    ]
+
+token_privileges = TOKEN_PRIVILEGES()
 token_privileges.PrivilegeCount = 1
 token_privileges.Privileges[0].Luid = luid
-token_privileges.Privileges[0].Attributes = 0x00000002
+token_privileges.Privileges[0].Attributes = 0x00000002  # SE_PRIVILEGE_ENABLED
 
 # Adjust the token privileges
-AdjustTokenPrivileges(token_handle, False, ctypes.byref(token_privileges), 0, None, None)
-
-# Print the result
-print("SeImpersonatePrivilege has been enabled.")
+if not AdjustTokenPrivileges(token_handle, False, ctypes.byref(token_privileges), 0, None, None):
+    print("Failed to adjust token privileges.")
+else:
+    print("SeImpersonatePrivilege has been enabled.")
